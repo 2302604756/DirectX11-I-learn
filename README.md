@@ -1,1 +1,4 @@
 根据chili engine学习dx11，里面有一些在学习时遇到的难点和易错点
+更新日志
+2026/1/7 
+在Graphics中封装了对一般图形进行绘制的test和DrawTestTriangle函数

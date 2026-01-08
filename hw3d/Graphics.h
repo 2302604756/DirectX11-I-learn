@@ -70,7 +70,7 @@ public:
 	/////////////////////////////////
 	void DrawTestTriangle();
 	void Test();
-	
+	void ConstantBufferTest(float angle);
 
 
 	Graphics( HWND hWnd,int width,int height );

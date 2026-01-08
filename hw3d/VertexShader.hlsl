@@ -11,10 +11,14 @@ struct VSOut
     float4 pos : SV_POSITION;
 };
 
+cbuffer CBuf{
+   matrix transform; 
+};
+
 VSOut main(VSIn vin)
 {
     VSOut v;
     v.color = vin.color;
-    v.pos = float4(vin.pos, 0.0f, 1.0f);
+    v.pos = mul(float4(vin.pos, 0.0f, 1.0f),transform);
     return v;
 }

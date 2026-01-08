@@ -227,7 +227,7 @@ void Graphics::DrawTestTriangle() {
 
 	pContext->Draw(std::size(vertices), 0u);
 }
-
+//Draw Triangle
 void Graphics::Test() {
 	//********************************************************************************
 	//千万不要在绑定Comptr时使用&，这会先释放原来Comptr里指向的资源 然后把空资源绑定进去
@@ -271,9 +271,11 @@ void Graphics::Test() {
 		3,1,2,
 		2,1,5,
 	};
+
+
 #pragma endregion
 
-#pragma region 顶点缓冲与索引缓存
+#pragma region 顶点缓冲与索引缓存和常数缓冲
 	// 创建顶点缓冲
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
 	D3D11_BUFFER_DESC bd = {};
@@ -310,6 +312,8 @@ void Graphics::Test() {
 	if (FAILED(hr)) throw std::runtime_error("CreateIndexBuffer failed");
 	//绑定进入管线
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
+
+
 #pragma endregion
 
 #pragma region 着色器
@@ -384,7 +388,195 @@ void Graphics::Test() {
     pContext->DrawIndexed(UINT(std::size(index)), 0u, 0u);
 	// Present 通常在外层交换链循环做，这里不处理
 }
+//constant buffer
+void Graphics::ConstantBufferTest(float angle) {
+	//********************************************************************************
+	//千万不要在绑定Comptr时使用&，这会先释放原来Comptr里指向的资源 然后把空资源绑定进去
+	// *******************************************************************************
+	// 绑定渲染目标（如果 pTarget 已经做了绑定，这行可以保留；否则你需要手动绑定 SwapChain 的 back buffer）
+	pTarget->BindAsBuffer(*this);
 
+	namespace wrl = Microsoft::WRL;
+#pragma region 结构体
+	//这样写结构体使得我们可以任意选择性修改里面的color或者position
+	struct Vertex {
+		struct
+		{
+			float X;
+			float Y;
+		} Position;
+		struct
+		{
+			unsigned char r;
+			unsigned char g;
+			unsigned char b;
+			unsigned char a;
+		} Color;
+	};
+
+	Vertex vertices[] =
+	{
+		{ 0.0f,0.5f,255,0,0,0 },
+		{0.5f,-0.5f,0,255,0,0 },
+		{ -0.5f,-0.5f,0,0,255,0 },
+
+		{ -0.3f,0.3f,0,255,0,0 },
+		{ 0.3f,0.3f,0,255,0,0 },
+		{0.0f,-0.8f,255,0,0,0 },
+	}; // 顺时针（默认 Direct3D 前向为顺时针/可见，若看不到可改为逆时针或禁用剔除）
+	vertices[0].Color.g = 255;
+
+	const unsigned short index[]{
+		0,4,3,
+		3,4,1,
+		3,1,2,
+		2,1,5,
+	};
+
+	//constant buffer
+	struct ConstantBuffer {
+		struct {
+			float element[4][4];
+		}transformation;
+	};
+
+	const ConstantBuffer cb = {
+		{
+			(3.0f / 4.0f) * std::cos(angle),	    std::sin(angle),   0.0f, 0.0f,
+			(3.0f / 4.0f) * -std::sin(angle),   std::cos(angle),   0.0f, 0.0f,
+			0.0f,								0.0f,			   1.0f, 0.0f,
+			0.0f,							    0.0f,			   0.0f, 1.0f,
+		}
+	};
+#pragma endregion
+
+#pragma region 顶点缓冲与索引缓存和常数缓冲
+	// 创建顶点缓冲
+	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
+	D3D11_BUFFER_DESC bd = {};
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.CPUAccessFlags = 0u;
+	bd.MiscFlags = 0u;
+	bd.ByteWidth = UINT(sizeof(vertices));
+	bd.StructureByteStride = UINT(sizeof(Vertex));
+	D3D11_SUBRESOURCE_DATA sd = {};
+	sd.pSysMem = vertices;
+	HRESULT hr = pDevice->CreateBuffer(&bd, &sd, pVertexBuffer.GetAddressOf());
+	if (FAILED(hr)) {
+		throw std::runtime_error("CreateBuffer failed");
+	}
+	// 绑定顶点缓冲（注意传入 ID3D11Buffer* 数组）
+	ID3D11Buffer* vbs[] = { pVertexBuffer.Get() };
+	const UINT stride = sizeof(Vertex);
+	const UINT offset = 0u;
+	pContext->IASetVertexBuffers(0u, 1u, vbs, &stride, &offset);
+
+	//创建index buffer
+	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
+	D3D11_BUFFER_DESC id = {};
+	id.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	id.Usage = D3D11_USAGE_DEFAULT;
+	id.CPUAccessFlags = 0u;
+	id.MiscFlags = 0u;
+	id.ByteWidth = UINT(sizeof(index));
+	id.StructureByteStride = UINT(sizeof(unsigned short));
+	D3D11_SUBRESOURCE_DATA isd = {};
+	isd.pSysMem = index;
+	hr = pDevice->CreateBuffer(&id, &isd, pIndexBuffer.GetAddressOf());
+	if (FAILED(hr)) throw std::runtime_error("CreateIndexBuffer failed");
+	//绑定进入管线
+	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0u);
+
+	//创建constant buffer
+	
+	wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
+	D3D11_BUFFER_DESC cbd = {};
+	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbd.Usage = D3D11_USAGE_DYNAMIC;
+	cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	cbd.MiscFlags = 0u;
+	cbd.ByteWidth = (UINT)(sizeof(cb));
+	cbd.StructureByteStride = 0u;
+	D3D11_SUBRESOURCE_DATA csd = {};
+	csd.pSysMem = &cb;
+	hr = pDevice->CreateBuffer(&cbd, &csd, pConstantBuffer.GetAddressOf());
+	//绑定到管道
+	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
+#pragma endregion
+
+#pragma region 着色器
+	// 编译并创建着色器
+	wrl::ComPtr<ID3DBlob> errorBlob;
+	wrl::ComPtr<ID3DBlob> pVSBlob, pPSBlob;
+	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
+	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+
+	hr = D3DCompileFromFile(L"VertexShader.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+		"main", "vs_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pVSBlob, &errorBlob);
+	if (FAILED(hr)) {
+		if (errorBlob) OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+		throw std::runtime_error("Vertex Shader compile failed");
+	}
+	hr = D3DCompileFromFile(L"PixelShader.hlsl", nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE,
+		"main", "ps_5_0", D3D10_SHADER_ENABLE_STRICTNESS, 0, &pPSBlob, &errorBlob);
+	if (FAILED(hr)) {
+		if (errorBlob) OutputDebugStringA((char*)errorBlob->GetBufferPointer());
+		throw std::runtime_error("Pixel Shader compile failed");
+	}
+
+	hr = pDevice->CreateVertexShader(pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), nullptr, pVertexShader.GetAddressOf());
+	if (FAILED(hr)) throw std::runtime_error("CreateVertexShader failed");
+	hr = pDevice->CreatePixelShader(pPSBlob->GetBufferPointer(), pPSBlob->GetBufferSize(), nullptr, pPixelShader.GetAddressOf());
+	if (FAILED(hr)) throw std::runtime_error("CreatePixelShader failed");
+
+	pContext->VSSetShader(pVertexShader.Get(), nullptr, 0u);
+	pContext->PSSetShader(pPixelShader.Get(), nullptr, 0u);
+#pragma endregion
+
+#pragma region IA
+	// 输入布局（POSITION float2）
+	D3D11_INPUT_ELEMENT_DESC layout[] = {
+		//8u 是因为R32G32_FLOAT是八位
+		//1.语义 2.语义索引如COLOR1就填1 3.数据格式 4.输入槽位 
+		// 5.AligendByteOffset对齐字节偏移 表示该数据在缓冲里的偏移量 从第几个字节开始读
+		//6.输入槽类型 per vertex还是 per instance 7.实例数据步长
+		{ "POSITION", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		//format不能用uint因为他会把我们的颜色压成0
+		{"COLOR", 0, DXGI_FORMAT_R8G8B8A8_UNORM, 0, 8u, D3D11_INPUT_PER_VERTEX_DATA, 0 }
+	};
+	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+	//1.Layout描述 2.语义数量
+	hr = pDevice->CreateInputLayout(layout, 2, pVSBlob->GetBufferPointer(), pVSBlob->GetBufferSize(), pInputLayout.GetAddressOf());
+	if (FAILED(hr)) throw std::runtime_error("CreateInputLayout failed");
+
+	pContext->IASetInputLayout(pInputLayout.Get());
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// 设置视口（确保与目标大小一致）
+	D3D11_VIEWPORT vp = {};
+	vp.Width = (float)width;   // width 为你的渲染目标宽度成员
+	vp.Height = (float)height; // height 为你的渲染目标高度成员
+	vp.MinDepth = 0.0f;
+	vp.MaxDepth = 1.0f;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	pContext->RSSetViewports(1, &vp);
+#pragma endregion
+
+	// 可选：清除渲染目标（如果 pTarget->BindAsBuffer 没做）
+	// float clearColor[4] = { 0.2f, 0.2f, 0.4f, 1.0f };
+	// pContext->ClearRenderTargetView(pYourRTV, clearColor);
+
+	// 绘制
+	// DrawIndexed 方法用于绘制使用索引缓冲区的图形。
+	// 参数说明：
+	// - IndexCount: 要绘制的索引数量，通常是索引数组的大小。
+	// - StartIndexLocation: 索引缓冲区中第一个索引的偏移量，通常是0，表示从第一个索引开始绘制。
+	// - BaseVertexLocation: 顶点缓冲区中第一个顶点的偏移量，通常是0，表示从第一个顶点开始绘制。
+	pContext->DrawIndexed(UINT(std::size(index)), 0u, 0u);
+	// Present 通常在外层交换链循环做，这里不处理
+}
 
 Graphics::~Graphics()
 {

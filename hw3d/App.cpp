@@ -128,9 +128,9 @@ void App::DoFrame( float dt )
     const float r = 0.5f + 0.5f * sin(t);
     const float g = 0.5f + 0.5f * sin(t + 2.0f);
     const float b = 0.5f + 0.5f * sin(t + 4.0f);
-
+	
     wnd.Gfx().BeginFrame(r, g, b);
-	wnd.Gfx().Test();
+	wnd.Gfx().ConstantBufferTest(time);
     wnd.Gfx().EndFrame();
 	//light.Bind( wnd.Gfx(),cameras->GetMatrix() );
 	//rg.BindMainCamera( cameras.GetActiveCamera() );

@@ -1,4 +1,4 @@
-/******************************************************************************************
+﻿/******************************************************************************************
 *	Chili DirectX Framework Version 16.10.01											  *
 *	Surface.h																			  *
 *	Copyright 2016 PlanetChili <http://www.planetchili.net>								  *
@@ -123,8 +123,11 @@ public:
 	Surface& operator=( Surface&& donor ) noexcept = default;
 	Surface& operator=( const Surface& ) = delete;
 	~Surface() = default;
+	//用于将整个表面填充为某种单一颜色
 	void Clear( Color fillValue ) noexcept;
+	//用于在指定的 (x, y) 坐标处设置颜色
 	void PutPixel( unsigned int x,unsigned int y,Color c ) noxnd;
+	//用于获取指定坐标的颜色
 	Color GetPixel( unsigned int x,unsigned int y ) const noxnd;
 	unsigned int GetWidth() const noexcept;
 	unsigned int GetHeight() const noexcept;
@@ -132,12 +135,17 @@ public:
 	Color* GetBufferPtr() noexcept;
 	const Color* GetBufferPtr() const noexcept;
 	const Color* GetBufferPtrConst() const noexcept;
+	//FromFile 允许你从硬盘读取图片文件（如 png, jpg 等）并加载到 Surface 对象中
 	static Surface FromFile( const std::string& name );
+	//Save 函数可以将当前的图像数据保存回硬盘
 	void Save( const std::string& filename ) const;
 	bool AlphaLoaded() const noexcept;
 private:
 	Surface( DirectX::ScratchImage scratch ) noexcept;
 private:
+	//它固定使用了 DXGI_FORMAT_B8G8R8A8_UNORM 格式，意味着每个像素由 32 位组成（蓝、绿、红、透明度各占 8 位）。
+	//与color类的format（unsigned int）一致
 	static constexpr DXGI_FORMAT format = DXGI_FORMAT::DXGI_FORMAT_B8G8R8A8_UNORM;
+	//负责实际持有图像的内存缓冲
 	DirectX::ScratchImage scratch;
 };

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Vertex.h"
 #include <vector>
 #include <DirectXMath.h>
@@ -50,5 +50,5 @@ public:
 
 public:
 	Dvtx::VertexBuffer vertices;
-	std::vector<unsigned short> indices;
+	std::vector<unsigned short> indices;//顶点数量
 };

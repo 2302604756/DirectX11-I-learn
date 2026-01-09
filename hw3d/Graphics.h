@@ -11,6 +11,8 @@
 #include <random>
 #include "ConditionalNoexcept.h"
 
+
+
 namespace Bind
 {
 	class Bindable;
@@ -71,7 +73,7 @@ public:
 	void DrawTestTriangle();
 	void Test();
 	void ConstantBufferTest(float angle);
-
+	void CubeTest();
 
 	Graphics( HWND hWnd,int width,int height );
 	Graphics( const Graphics& ) = delete;
@@ -104,3 +106,5 @@ private:
 	Microsoft::WRL::ComPtr<ID3D11DeviceContext> pContext;
 	std::shared_ptr<Bind::RenderTarget> pTarget;
 };
+
+

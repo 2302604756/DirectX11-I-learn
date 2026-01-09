@@ -9,10 +9,14 @@
 #include "Testing.h"
 #include "Camera.h"
 #include "Channels.h"
+#include "TestCube.h"
+
 
 #include <sstream>
 
 namespace dx = DirectX;
+
+
 
 App::App( const std::string& commandLine )
 	:
@@ -21,9 +25,28 @@ App::App( const std::string& commandLine )
 	scriptCommander( TokenizeQuoted( commandLine ) ),
 	light( wnd.Gfx(),{ 10.0f,5.0f,0.0f } )
 {
+	
+
 	cameras.AddCamera( std::make_unique<Camera>( wnd.Gfx(),"A",dx::XMFLOAT3{ -13.5f,6.0f,3.5f },0.0f,PI / 2.0f ) );
 	cameras.AddCamera( std::make_unique<Camera>( wnd.Gfx(),"B",dx::XMFLOAT3{ -13.5f,28.8f,-6.4f },PI / 180.0f * 13.0f,PI / 180.0f * 61.0f ) );
 	cameras.AddCamera( light.ShareCamera() );
+
+
+#pragma region 50个cube生成
+	std::mt19937 rng(std::random_device{}());
+	// 生成 80 个方块
+	for (int i = 0; i < 80; i++)
+	{
+		// 构造 FloatingCube，它会自动随机位置
+		cubes.emplace_back(wnd.Gfx(), rng);
+
+		// !!! 关键修复：必须链接到渲染图 !!!
+		// FloatingCube.pCube 是 unique_ptr<TestCube>
+		cubes.back().pCube->LinkTechniques(rg);
+	}
+#pragma endregion
+
+	
 
 	cube.SetPos( { 10.0f,5.0f,6.0f } );
 	cube2.SetPos( { 10.0f,5.0f,14.0f } );
@@ -129,34 +152,56 @@ void App::DoFrame( float dt )
     const float g = 0.5f + 0.5f * sin(t + 2.0f);
     const float b = 0.5f + 0.5f * sin(t + 4.0f);
 	
-    wnd.Gfx().BeginFrame(r, g, b);
+    wnd.Gfx().BeginFrame(0.07f, 0.0f, 0.12f);
+
+#pragma region 绘制多个三角形漂浮
 	wnd.Gfx().ConstantBufferTest(time);
-    wnd.Gfx().EndFrame();
+	light.Bind(wnd.Gfx(), cameras->GetMatrix());
+	rg.BindMainCamera(cameras.GetActiveCamera());
+	light.Submit(Chan::main);
+	// 确保 speed_factor 不是 0
+	const float loop_dt = dt * speed_factor;
+
+	// 更新所有方块
+	 // === 2. 更新并提交方块 ===
+	for (auto& fc : cubes)
+	{
+		// 调用我们刚才在 struct 里写的 Update
+		// 传入 dt (时间增量) 和 speed_factor (全局速度系数)
+		fc.Update(dt * speed_factor);
+
+		// 提交渲染
+		fc.pCube->Submit(Chan::main);
+	}
+	rg.Execute(wnd.Gfx());
+#pragma endregion
+
+#pragma region 教程最终渲染
 	//light.Bind( wnd.Gfx(),cameras->GetMatrix() );
 	//rg.BindMainCamera( cameras.GetActiveCamera() );
 	//	
 	//light.Submit( Chan::main );
 	//cube.Submit( Chan::main );
-	//sponza.Submit( Chan::main );
-	//cube2.Submit( Chan::main );
-	//gobber.Submit( Chan::main );
-	//nano.Submit( Chan::main );
+	//sponza.Submit(Chan::main);
+	/*cube2.Submit(Chan::main);
+	gobber.Submit( Chan::main );
+	nano.Submit( Chan::main );*/
 	//cameras.Submit( Chan::main );
 
 	//sponza.Submit( Chan::shadow );
 	//cube.Submit( Chan::shadow );
-	//sponza.Submit( Chan::shadow );
-	//cube2.Submit( Chan::shadow );
-	//gobber.Submit( Chan::shadow );
-	//nano.Submit( Chan::shadow );
+	/*sponza.Submit(Chan::shadow);
+	cube2.Submit( Chan::shadow );
+	gobber.Submit( Chan::shadow );
+	nano.Submit( Chan::shadow );*/
 
 	//rg.Execute( wnd.Gfx() );
 
-	//if( savingDepth )
-	//{
-	//	rg.DumpShadowMap( wnd.Gfx(),"shadow.png" );
-	//	savingDepth = false;
-	//}
+	/*if( savingDepth )
+	{
+		rg.DumpShadowMap( wnd.Gfx(),"shadow.png" );
+		savingDepth = false;
+	}*/
 	//
 	//// imgui windows
 	//static MP sponzeProbe{ "Sponza" };
@@ -172,10 +217,20 @@ void App::DoFrame( float dt )
 	//cube2.SpawnControlWindow( wnd.Gfx(),"Cube 2" );
 	//
 	//rg.RenderWindows( wnd.Gfx() );
+#pragma endregion
 
-	//// present
+	
 	wnd.Gfx().EndFrame();
 	//rg.Reset();
+
+	
+	
+
+	
+
+
+	//// present
+	
 }
 
 void App::ShowImguiDemoWindow()

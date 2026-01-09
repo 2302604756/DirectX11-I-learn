@@ -11,6 +11,7 @@
 #include "DepthStencil.h"
 #include "RenderTarget.h"
 
+#include "VertexBuffer.h"
 namespace wrl = Microsoft::WRL;
 namespace dx = DirectX;
 
@@ -578,6 +579,10 @@ void Graphics::ConstantBufferTest(float angle) {
 	// Present 通常在外层交换链循环做，这里不处理
 }
 
+
+
+
+
 Graphics::~Graphics()
 {
 	ImGui_ImplDX11_Shutdown();
@@ -642,7 +647,7 @@ void Graphics::BeginFrame( float red,float green,float blue ) noexcept
 	// ⭐ 清屏颜色（关键）
 	const std::array<float,4> clearColor = { red,green,blue,1.0f };
 	//pTarget->Clear(*this,clearColor);
-	pTarget->Clear(*this);
+	pTarget->Clear(*this,clearColor);
 	// clearing shader inputs to prevent simultaneous in/out bind carried over from prev frame
 	ID3D11ShaderResourceView* const pNullTex = nullptr;
 	pContext->PSSetShaderResources( 0,1,&pNullTex ); // fullscreen input texture

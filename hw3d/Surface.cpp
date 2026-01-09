@@ -88,6 +88,8 @@ unsigned int Surface::GetBytePitch() const noexcept
 
 Surface::Color* Surface::GetBufferPtr() noexcept
 {
+	//GetPixels就是得到一大块连续的字节内存
+	//
 	return reinterpret_cast<Color*>( scratch.GetPixels() );
 }
 

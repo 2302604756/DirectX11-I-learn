@@ -73,7 +73,8 @@ public:
 	void DrawTestTriangle();
 	void Test();
 	void ConstantBufferTest(float angle);
-	void CubeTest();
+	void TextureTest(float angle);
+	void CubeTest(float angle);
 
 	Graphics( HWND hWnd,int width,int height );
 	Graphics( const Graphics& ) = delete;

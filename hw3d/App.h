@@ -98,6 +98,8 @@ private:
 	Model nano{ wnd.Gfx(),"Models\\nano_textured\\nanosuit.obj",2.0f };
 	bool savingDepth = false;
 
+
+    bool isImgui = true;
 #pragma region 漂浮Cube容器
 	// 替换原有的单个cube，改为容器
     std::vector<FloatingCube> cubes;

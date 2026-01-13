@@ -27,6 +27,11 @@ int CALLBACK WinMain(
 	LPSTR     lpCmdLine,
 	int       nCmdShow )
 {
+	if (FAILED(CoInitialize(nullptr)))
+	{
+		MessageBox(nullptr, "COM Initialization Failed", "Error", MB_OK | MB_ICONERROR);
+		return -1;
+	}
 	try {		
 		return App{}.Go();
 	}

@@ -17,13 +17,13 @@
 namespace dx = DirectX;
 
 
-
 App::App( const std::string& commandLine )
 	:
 	commandLine( commandLine ),
 	wnd( 1280,720,"The Donkey Fart Box" ),
 	scriptCommander( TokenizeQuoted( commandLine ) ),
 	light( wnd.Gfx(),{ 10.0f,5.0f,0.0f } )
+	
 {
 	
 
@@ -66,7 +66,7 @@ App::App( const std::string& commandLine )
 	gobber.LinkTechniques( rg );
 	nano.LinkTechniques( rg );
 	cameras.LinkTechniques( rg );
-
+	
 	rg.BindShadowCamera( *light.ShareCamera() );
 }
 
@@ -144,7 +144,7 @@ void App::HandleInput( float dt )
 //如果把这一段代码置空 就只会生成一个空的Win32窗口
 void App::DoFrame( float dt )
 {
-	const float t = time;
+	const float t =   speed_factor;
 	std::ostringstream oss;
 	oss << "Timer:" << t << "s";
 	wnd.SetTitle(oss.str());
@@ -152,28 +152,40 @@ void App::DoFrame( float dt )
     const float g = 0.5f + 0.5f * sin(t + 2.0f);
     const float b = 0.5f + 0.5f * sin(t + 4.0f);
 	
+	static char buffer[1024];
+	//imgui需要每一帧都刷新 所以要在DoFrame中调用
+	//chili在window中加入了如果检测到是ui系统在得到输入 那么系统将不再读取输入 防止窗口命令和ui命令冲突
     wnd.Gfx().BeginFrame(0.07f, 0.0f, 0.12f);
-
-#pragma region 绘制多个三角形漂浮
-	wnd.Gfx().ConstantBufferTest(time);
-	light.Bind(wnd.Gfx(), cameras->GetMatrix());
-	rg.BindMainCamera(cameras.GetActiveCamera());
-	light.Submit(Chan::main);
-	// 确保 speed_factor 不是 0
-	const float loop_dt = dt * speed_factor;
-
-	// 更新所有方块
-	 // === 2. 更新并提交方块 ===
-	for (auto& fc : cubes)
-	{
-		// 调用我们刚才在 struct 里写的 Update
-		// 传入 dt (时间增量) 和 speed_factor (全局速度系数)
-		fc.Update(dt * speed_factor);
-
-		// 提交渲染
-		fc.pCube->Submit(Chan::main);
+	if (ImGui::Begin("Simluation Speed")) {
+		ImGui::SliderFloat("Speed Factor", &speed_factor, 0.0f, 4.0f);
+		ImGui::Text("Application average %.3f ms/frame(%.1f FPS)", 1000.0f/ImGui::GetIO().Framerate,ImGui::GetIO().Framerate);
+		ImGui::InputText("Butts", buffer, sizeof(buffer));
+		wnd.SetTitle(buffer);
 	}
-	rg.Execute(wnd.Gfx());
+	ImGui::End();
+
+    wnd.Gfx().CubeTest(t);
+	
+#pragma region 绘制多个三角形漂浮
+	//wnd.Gfx().ConstantBufferTest(time);
+	//light.Bind(wnd.Gfx(), cameras->GetMatrix());
+	//rg.BindMainCamera(cameras.GetActiveCamera());
+	//light.Submit(Chan::main);
+	//// 确保 speed_factor 不是 0
+	//const float loop_dt = dt * speed_factor;
+
+	//// 更新所有方块
+	// // === 2. 更新并提交方块 ===
+	//for (auto& fc : cubes)
+	//{
+	//	// 调用我们刚才在 struct 里写的 Update
+	//	// 传入 dt (时间增量) 和 speed_factor (全局速度系数)
+	//	fc.Update(dt * speed_factor);
+
+	//	// 提交渲染
+	//	fc.pCube->Submit(Chan::main);
+	//}
+	//rg.Execute(wnd.Gfx());
 #pragma endregion
 
 #pragma region 教程最终渲染

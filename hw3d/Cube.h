@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <optional>
 #include "Vertex.h"
@@ -19,6 +19,7 @@ public:
 
 		if( !layout )
 		{
+			//如果没有指定顶点格式 就使用默认的Position3D
 			layout = Dvtx::VertexLayout{};
 			layout->Append( Type::Position3D );
 		}
